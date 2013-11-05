@@ -65,15 +65,14 @@
 			currentSendObject						= nil;
 			
 			
-			inStream			= [theInStream retain];
-			outStream			= [theOutStream retain];
+			inStream			= theInStream;
+			outStream			= theOutStream;
 			delegate			= theDelegate; // do not retain the delegate
 			
 			threadIsPresentInMethod = NO;
 		}
 		else
 		{
-			[self release];
 			self = nil;
 		}
 	}
@@ -84,17 +83,13 @@
 {
 	[self close];
 	
-	[inStream release];
-	[outStream release];
 	
-	[sendObjectsQueue release];
 	
 	free(dataBuffer);
 	
 	if (sendBuffer)
 		free(sendBuffer);
 	
-	[super dealloc];
 }
 
 -(void)open;
@@ -131,21 +126,19 @@
 
 -(void)setupKeepalive;
 {
-	keepaliveSendTimer = [[NSTimer scheduledTimerWithTimeInterval:2 target:self selector:@selector(sendKeepalive:) userInfo:nil repeats:YES] retain];
+	keepaliveSendTimer = [NSTimer scheduledTimerWithTimeInterval:2 target:self selector:@selector(sendKeepalive:) userInfo:nil repeats:YES];
 }
 
 -(void)sendKeepalive:(NSTimer *)theTimer;
 {
-	NSData *nullData = [[NSData dataWithBytes:NULL length:0] retain];
+	NSData *nullData = [NSData dataWithBytes:NULL length:0];
 	[self enqueueNextSendObject:nullData];
-	[nullData release];
 }
 
 -(void)teardownKeepalive;
 {
 	if (keepaliveSendTimer) {
 		[keepaliveSendTimer invalidate];
-		[keepaliveSendTimer release];
 		keepaliveSendTimer = nil;
 	}
 }
@@ -176,7 +169,6 @@
 			// parse data and update status
 			NSData *packetData = [[NSData alloc] initWithBytes:dataBuffer length:(dataBufferCursor - dataBuffer)];
 			[delegate didReceiveData:packetData onConnection:self];
-			[packetData release];
 			bytesMissingForNextSubpacket = HEADERSIZE;
 			nextExpectedSubpacket = kServerStubSubPacketHeader;
 			break;
@@ -207,11 +199,11 @@
 	
 	if ([sendObjectsQueue count] > 0)
 	{
-		currentSendObject = [[sendObjectsQueue lastObject] retain];
+		currentSendObject = [sendObjectsQueue lastObject];
 		[sendObjectsQueue removeLastObject];
 		
 		// create new send buffer
-		uint32_t objectSize = [currentSendObject length];
+		uint32_t objectSize = (uint32_t)[currentSendObject length];
 		uint32_t packetSize = objectSize + HEADERSIZE;
 		sendBuffer = (uint8_t *)malloc(packetSize);
 		
@@ -224,7 +216,6 @@
 		bytesRemainingToSend = packetSize;
 		
 		// release the sendObject
-		[currentSendObject release];
 	}
 	
 	// check if we need to re-enable the stream events because we had nothing to send earlier
@@ -329,7 +320,7 @@
 				outStreamHasSpaceAvailableEventIgnored = NO;
 				
 				uint32_t	bytesToSend = ((bytesRemainingToSend >= CHUNKSIZE) ? CHUNKSIZE : bytesRemainingToSend);
-				uint32_t	bytesActuallySent = [outStream write:sendBufferCursor maxLength:bytesToSend];
+				uint32_t	bytesActuallySent = (uint32_t)[outStream write:sendBufferCursor maxLength:bytesToSend];
 				
 				bytesRemainingToSend -= bytesActuallySent;
 				
@@ -371,7 +362,10 @@
 		{
 			// be careful! the delegate might kill us for the bad news...
 			[delegate streamErrorEncountered:stream onConnection:self];
+            break;
 		}
+        case NSStreamEventNone:
+            break;
 	}
 	
 	threadIsPresentInMethod = NO;

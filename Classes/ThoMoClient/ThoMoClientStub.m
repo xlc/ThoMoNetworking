@@ -98,9 +98,6 @@
 - (void) dealloc
 {
 	[self stop];
-	self.offeredNetServices		= nil;
-	self.connectedNetServices	= nil;
-	[super dealloc];
 }
 
 
@@ -162,7 +159,6 @@
 -(void)teardown;
 {
 	[browser stop]; 
-	[browser release]; 
 	browser = nil;
 	
 	[super teardown];
@@ -174,7 +170,7 @@
 {
 	NSData *addr = [[theService addresses] objectAtIndex:0];
 	
-	NSMutableString *peerKey = [[[self keyStringFromAddress:addr] mutableCopy] autorelease];
+	NSMutableString *peerKey = [[self keyStringFromAddress:addr] mutableCopy];
 	
 	return peerKey;
 }
@@ -193,7 +189,7 @@
 	[self.offeredNetServices addObject:service];
 	
 	//resolve net service
-	[service retain]; // retain - will be released after the resolve comes back!
+	 // retain - will be released after the resolve comes back!
 	[service setDelegate:self];
 	[service resolveWithTimeout:0.0];
 }
@@ -238,8 +234,6 @@
 		if (gotStreams)
 		{
 			[self openNewConnection:key inputStream:istream outputStream:ostream];
-			[istream release];
-			[ostream release];
 						
 			[self.connectedNetServices setObject:sender forKey:key];
 		}
@@ -248,7 +242,6 @@
 	
 	// we're done here, stop resolving
 	[sender stop];
-	[sender release];
 }
 
 
@@ -287,7 +280,6 @@
 	
 	// stop the resolve
 	[sender stop];
-	[sender release];
 }
 
 
@@ -311,7 +303,7 @@
 	[super streamEndEncountered:theStream onConnection:theConnection];
 	
 	// remove the connection's service from the connectedNetServices dict (it may still be contained in the offered array)
-	NSNetService *connectionNetService = [[self.connectedNetServices objectForKey:connectionKey] retain]; // retain - will be released after the resolve comes back!
+	NSNetService *connectionNetService = [self.connectedNetServices objectForKey:connectionKey]; // retain - will be released after the resolve comes back!
 	[self.connectedNetServices removeObjectForKey:connectionKey];
 	
 	// try to re-resolve the netService if it is still offered by Bonjour
@@ -331,7 +323,7 @@
 	[super streamErrorEncountered:theStream onConnection:theConnection];
 	
 	// remove the connection's service from the connectedNetServices dict (it may still be contained in the offered array)
-	NSNetService *connectionNetService = [[self.connectedNetServices objectForKey:connectionKey] retain]; // retain - will be released after the resolve comes back!
+	NSNetService *connectionNetService = [self.connectedNetServices objectForKey:connectionKey]; // retain - will be released after the resolve comes back!
 	[self.connectedNetServices removeObjectForKey:connectionKey];
 	
 	// try to re-resolve the netService if it is still offered by Bonjour

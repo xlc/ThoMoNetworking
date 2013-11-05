@@ -38,12 +38,12 @@
 	NSMutableArray		*offeredNetServices;	// offered
 	NSMutableDictionary *connectedNetServices;	// connected
 	
-	id<ThoMoClientDelegateProtocol> delegate; 	
+	id<ThoMoClientDelegateProtocol> __weak delegate; 	
 }
 
-@property (assign) id<ThoMoClientDelegateProtocol> delegate; 
-@property (retain) NSMutableArray *offeredNetServices;
-@property (retain) NSMutableDictionary *connectedNetServices;
+@property (weak) id<ThoMoClientDelegateProtocol> delegate; 
+@property (strong) NSMutableArray *offeredNetServices;
+@property (strong) NSMutableDictionary *connectedNetServices;
 
 
 -(NSArray *)connectedServers;

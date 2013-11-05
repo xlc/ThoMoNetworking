@@ -58,7 +58,7 @@
 
 // interface extension for 'private' properties
 @interface ThoMoServerStub() 
-@property (nonatomic, retain)	NSNetService	*netService;
+@property (nonatomic, strong)	NSNetService	*netService;
 @property (assign)				uint16_t		listenPort;
 @end
 
@@ -169,7 +169,7 @@ static void ServerStubAcceptCallback(CFSocketRef listenSocket, CFSocketCallBackT
 	if (callbackType == kCFSocketAcceptCallBack) {
 		
 		// we have packaged up the server object in the info pointer
-		ThoMoServerStub *server = (ThoMoServerStub *)info;
+		ThoMoServerStub *server = (__bridge ThoMoServerStub *)info;
 		
 		// get the BSD child socket for the new connection
 		CFSocketNativeHandle childSocketNativeHandle = *(CFSocketNativeHandle *)pChildSocketNativeHandle;
@@ -192,7 +192,7 @@ static void ServerStubAcceptCallback(CFSocketRef listenSocket, CFSocketCallBackT
 		{
 			CFReadStreamSetProperty(readStream, kCFStreamPropertyShouldCloseNativeSocket, kCFBooleanTrue);
 			CFWriteStreamSetProperty(writeStream, kCFStreamPropertyShouldCloseNativeSocket, kCFBooleanTrue);
-			[server handleNewConnectionFromAddress:peerSocketAddress inputStream:(NSInputStream *)readStream outputStream:(NSOutputStream *)writeStream];
+			[server handleNewConnectionFromAddress:peerSocketAddress inputStream:(__bridge NSInputStream *)readStream outputStream:(__bridge NSOutputStream *)writeStream];
 		}
 		else
 		{
@@ -214,7 +214,7 @@ static void ServerStubAcceptCallback(CFSocketRef listenSocket, CFSocketCallBackT
 {
 	// first convert addr to a key string of format "IP-Address:Port"
 	// the whole retain thing is because of all the threads bouncing around
-	NSString *connectionKey = [[[self keyStringFromAddress:addr] retain] autorelease];
+	NSString *connectionKey = [self keyStringFromAddress:addr];
 	
 	// now let the superclass create, open, and register a new ThoMoTCPConnection object
 	[super openNewConnection:connectionKey inputStream:istr outputStream:ostr];	
@@ -229,7 +229,7 @@ static void ServerStubAcceptCallback(CFSocketRef listenSocket, CFSocketCallBackT
 	// ----------- SOCKET STUFF -----------
 	
 	// create socket context. we pass the server object as the info pointer to access it later from the callbacks
-	CFSocketContext socketContext = {APPLE_DEFINED_ZERO, self, NO_INFO_RETAIN_CALLBACK, NO_INFO_RELEASE_CALLBACK, NO_INFO_COPY_DESCRIPTION_CALLBACK};
+	CFSocketContext socketContext = {APPLE_DEFINED_ZERO, (__bridge void *)(self), NO_INFO_RETAIN_CALLBACK, NO_INFO_RELEASE_CALLBACK, NO_INFO_COPY_DESCRIPTION_CALLBACK};
 	
 	// create the socket we will use to listen for incoming connections. Here, we can directly install an auto-accepting callback on the socket - handy!
 	listenSocket = CFSocketCreate(kCFAllocatorDefault, PF_INET, SOCK_STREAM, IPPROTO_TCP, kCFSocketAcceptCallBack, (CFSocketCallBack)&ServerStubAcceptCallback, &socketContext);
@@ -251,7 +251,7 @@ static void ServerStubAcceptCallback(CFSocketRef listenSocket, CFSocketCallBackT
 	NSData *listenSocketAddressData		= [NSData dataWithBytes:&listenSocketAddress length:sizeof(listenSocketAddress)];
 	
 	// bind & listen (in cocoa this is done via the CFSocketSetAddress call)
-	if (kCFSocketSuccess != CFSocketSetAddress(listenSocket, (CFDataRef)listenSocketAddressData))
+	if (kCFSocketSuccess != CFSocketSetAddress(listenSocket, (__bridge CFDataRef)listenSocketAddressData))
 	{
 		if (listenSocket) CFRelease(listenSocket);
 		listenSocket = NULL;
@@ -260,7 +260,7 @@ static void ServerStubAcceptCallback(CFSocketRef listenSocket, CFSocketCallBackT
 	}
 	
 	// get the port number the kernel chose for us (we need it for bonjour)
-	listenSocketAddressData = [(NSData *)CFSocketCopyAddress(listenSocket) autorelease];
+	listenSocketAddressData = (NSData *)CFBridgingRelease(CFSocketCopyAddress(listenSocket));
 	memcpy(&listenSocketAddress, [listenSocketAddressData bytes], [listenSocketAddressData length]);
 		
 	self.listenPort = ntohs(listenSocketAddress.sin_port);
@@ -290,7 +290,7 @@ static void ServerStubAcceptCallback(CFSocketRef listenSocket, CFSocketCallBackT
 	NSString *protocol	= [NSString stringWithFormat:@"_%@._tcp.", protocolIdentifier];
 	
 	// create our service object which we want to publish
-	self.netService = [[[NSNetService alloc] initWithDomain:domain type:protocol name:name port:self.listenPort] autorelease];
+	self.netService = [[NSNetService alloc] initWithDomain:domain type:protocol name:name port:self.listenPort];
 	if(nil == self.netService) {
 		if (listenSocket) CFRelease(listenSocket);
 		listenSocket = NULL;

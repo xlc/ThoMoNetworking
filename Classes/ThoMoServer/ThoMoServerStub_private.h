@@ -33,7 +33,7 @@
 
 @interface ThoMoServerStub : ThoMoNetworkStub {
 	
-	id<ThoMoServerDelegateProtocol> delegate; 
+	id<ThoMoServerDelegateProtocol> __weak delegate; 
 	
 	uint16_t			listenPort;
 	CFSocketRef			listenSocket;
@@ -41,7 +41,7 @@
 	
 }
 
-@property (assign) id<ThoMoServerDelegateProtocol> delegate;
+@property (weak) id<ThoMoServerDelegateProtocol> delegate;
 
 -(NSArray *)connectedClients;
 
