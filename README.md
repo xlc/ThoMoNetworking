@@ -1,4 +1,4 @@
 ThoMoNetworking
 ===============
 
-Simple Networking for Your Cocoa and iPhone Apps - Out of the Box
+This is my fork of [ThoMoNetworking](https://hci.rwth-aachen.de/thomonet). 
