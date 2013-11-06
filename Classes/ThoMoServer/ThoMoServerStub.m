@@ -35,10 +35,8 @@
 #import <arpa/inet.h>
 #import "ThoMoTCPConnection.h"
 
-#ifdef THOMO_NEEDS_NETWORKING_INCLUDES
 #import <unistd.h>
 #import <CFNetwork/CFNetwork.h>
-#endif
 
 #define kThoMoNetworkInfoKeyServer kThoMoNetworkInfoKeyLocalNetworkStub
 #define kThoMoNetworkInfoKeyClient kThoMoNetworkInfoKeyRemoteConnectionIdString
