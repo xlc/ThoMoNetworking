@@ -9,11 +9,7 @@
                       'Xiliang Chen' => 'xlchen1291@gmail.com' }
    s.source       = { :git => 'https://github.com/xlc/ThoMoNetworking.git', :commit => '0dd77c9f0cfdea572d50b4c35373e89e11548217' }
    s.source_files = 'Classes/**/*'
-   s.public_header_files = 'Classes/ThoMoNetworking.h', 
-       'Classes/ThoMoClientStub.h', 
-       'Classes/ThoMoServerStub.h', 
-       'Classes/ThoMoClient/ThoMoClientDelegateProtocol.h'
-       'Classes/ThoMoServer/ThoMoServerDelegateProtocol.h'
+   s.private_header_files = '*Private.h'
 
    s.requires_arc = true
 
