@@ -41,11 +41,11 @@
 
 
 /// Disconnection notification (optional)
-- (void)server:(ThoMoServerStub *)theServer lostConnectionToClient:(NSString *)aClientIdString errorMessage:(NSString *)errorMessage;
+- (void)server:(ThoMoServerStub *)theServer lostConnectionToClient:(NSString *)aClientIdString error:(NSError *)error;
 
 
 /// Bonjour problem notification (optional)
-- (void)netServiceProblemEncountered:(NSString *)errorMessage onServer:(ThoMoServerStub *)theServer;
+- (void)server:(ThoMoServerStub *)theClient encounteredNetServiceError:(NSError *)error;
 
 
 /// Client shutdown notification (optional)
@@ -60,9 +60,9 @@
  Sent to its delegate by the server stub on the main thread whenever it received data from a client.
  
  \param[in] theServer The server stub that received the data.
- \param[in] theData The object that was bein received.
+ \param[in] theData The data received.
  \param[in] aClientIdString A string designating the client that sent the data.
  */
--(void)server:(ThoMoServerStub *)theServer didReceiveData:(id)theData fromClient:(NSString *)aClientIdString;
+-(void)server:(ThoMoServerStub *)theServer didReceiveData:(NSData *)theData fromClient:(NSString *)aClientIdString;
 
 @end

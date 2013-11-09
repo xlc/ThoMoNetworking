@@ -37,41 +37,13 @@
 	Note: the implementation of this class is Bonjour-agnostic and should remain so.
  */
 
-@interface ThoMoNetworkStub : NSObject <ThoMoTCPConnectionDelegateProtocol, NSNetServiceDelegate>
-{
-	NSMutableDictionary	*connections;
-	NSString			*protocolIdentifier;
-	NSThread			*networkThread;
-}
+@interface ThoMoNetworkStub : NSObject
 
 -(id)initWithProtocolIdentifier:(NSString *)theProtocolIdentifier;
 
 -(void) start;
 -(void) stop;
 
--(NSArray *)activeConnections;
-
--(void)send:(id<NSCoding>)theData toConnection:(NSString *)theConnectionIdString;
--(void)sendByteData:(NSData *)theData toConnection:(NSString *)theConnectionIdString;
-
-
-
-
-
-
-// protected
--(BOOL)setup;
--(void)teardown;
--(NSString *)keyStringFromAddress:(NSData *)addr;
-/// Returns the key for theConnection from the connections dictionary.
--(NSString *)keyForConnection:(ThoMoTCPConnection *)theConnection;
--(void) openNewConnection:(NSString *)theConnectionKey inputStream:(NSInputStream *)istr outputStream:(NSOutputStream *)ostr;
-
-
-
 @end
 
-NSString *const kThoMoNetworkInfoKeyUserMessage;
-NSString *const kThoMoNetworkInfoKeyData;
-NSString *const kThoMoNetworkInfoKeyRemoteConnectionIdString;
-NSString *const kThoMoNetworkInfoKeyLocalNetworkStub;
+

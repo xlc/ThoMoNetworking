@@ -28,17 +28,17 @@
  *
  */
 
-#import "ThoMoClientDelegateProtocol.h"
+#import "ThoMoNetworkStub.h"
 
-@interface ThoMoClientStub : NSObject
-{	
-}
+@protocol ThoMoClientDelegateProtocol;
+
+@interface ThoMoClientStub : ThoMoNetworkStub <NSNetServiceBrowserDelegate>
 
 /// Delegate accessor
 /**
  Accessor for the client stubs delegate. Must be compliant to ThoMoClientDelegateProtocol.
  */
-@property (assign) id<ThoMoClientDelegateProtocol> delegate; 
+@property (weak) id<ThoMoClientDelegateProtocol> delegate;
 
 
 /// Designated initializer
@@ -103,9 +103,5 @@
  \param[in] anObject An NSCoding compliant object that will be copied and re-created at the server stubs.
  */
 -(void)sendToAllServers:(id<NSCoding>)anObject;
-
-
-
--(void)sendData:(id<NSCoding>)theData toServer:(NSString *)theServerIdString DEPRECATED_ATTRIBUTE;
 
 @end

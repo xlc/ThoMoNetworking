@@ -45,36 +45,34 @@
 
 -(id)initWithDelegate:(id <ThoMoTCPConnectionDelegateProtocol>)theDelegate inputStream:(NSInputStream *)theInStream outputStream:(NSOutputStream *)theOutStream;
 {
+    if (!theDelegate || !theInStream || !theOutStream)
+    {
+        return nil;
+    }
+    
 	self = [super init];
 	if (self != nil) {
-				
-		if (theDelegate && theInStream && theOutStream)
-		{
-			inReady				= NO;
-			outReady			= NO;
-			streamsCanOpen		= YES;
-			openCallbackSent	= NO;
-			
-			dataBuffer						= (uint8_t *)malloc(HEADERSIZE);
-			dataBufferCursor				= dataBuffer;
-			bytesMissingForNextSubpacket	= HEADERSIZE;
-			nextExpectedSubpacket			= kServerStubSubPacketHeader;
-			
-			bytesRemainingToSend	= 0;
-			sendObjectsQueue						= [[NSMutableArray alloc] initWithCapacity:5];
-			currentSendObject						= nil;
-			
-			
-			inStream			= theInStream;
-			outStream			= theOutStream;
-			delegate			= theDelegate; // do not retain the delegate
-			
-			threadIsPresentInMethod = NO;
-		}
-		else
-		{
-			self = nil;
-		}
+        inReady				= NO;
+        outReady			= NO;
+        streamsCanOpen		= YES;
+        openCallbackSent	= NO;
+        
+        dataBuffer						= (uint8_t *)malloc(HEADERSIZE);
+        dataBufferCursor				= dataBuffer;
+        bytesMissingForNextSubpacket	= HEADERSIZE;
+        nextExpectedSubpacket			= kServerStubSubPacketHeader;
+        
+        bytesRemainingToSend	= 0;
+        sendObjectsQueue						= [[NSMutableArray alloc] initWithCapacity:5];
+        currentSendObject						= nil;
+        
+        
+        inStream			= theInStream;
+        outStream			= theOutStream;
+        delegate			= theDelegate; // do not retain the delegate
+        
+        threadIsPresentInMethod = NO;
+		
 	}
 	return self;	
 }
@@ -82,8 +80,6 @@
 - (void) dealloc
 {
 	[self close];
-	
-	
 	
 	free(dataBuffer);
 	
@@ -137,10 +133,8 @@
 
 -(void)teardownKeepalive;
 {
-	if (keepaliveSendTimer) {
-		[keepaliveSendTimer invalidate];
-		keepaliveSendTimer = nil;
-	}
+    [keepaliveSendTimer invalidate];
+    keepaliveSendTimer = nil;
 }
 
 -(void)processBufferAndPrepNextRead

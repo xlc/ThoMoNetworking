@@ -39,9 +39,7 @@ typedef enum ServerStubSubPackets {
 @class ThoMoServerStub;
 
 @interface ThoMoTCPConnection : NSObject <NSStreamDelegate>
-{
-	id <ThoMoTCPConnectionDelegateProtocol>		__weak delegate;
-	
+{	
 	NSInputStream	*inStream;
 	NSOutputStream	*outStream;
 	

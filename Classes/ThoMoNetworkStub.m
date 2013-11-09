@@ -29,6 +29,8 @@
  */
 
 #import "ThoMoNetworkStub.h"
+#import "ThoMoNetworkStub_Private.h"
+
 #import <arpa/inet.h>
 #import "ThoMoTCPConnection.h"
 #import <pthread.h>
@@ -40,24 +42,11 @@ NSString *const kThoMoNetworkInfoKeyLocalNetworkStub			= @"kThoMoNetworkInfoKeyL
 
 NSString *const kThoMoNetworkPrefScopeSpecifierKey				= @"kThoMoNetworkPrefScopeSpecifierKey";
 
-// interface category for main thread relay methods
-@interface ThoMoNetworkStub (RelayMethods)
--(void)networkStubDidShutDownRelayMethod;
--(void)netServiceProblemRelayMethod:(NSDictionary *)infoDict;
--(void)didReceiveDataRelayMethod:(NSDictionary *)infoDict;
--(void)connectionEstablishedRelayMethod:(NSDictionary *)infoDict;
--(void)connectionLostRelayMethod:(NSDictionary *)infoDict;
--(void)connectionClosedRelayMethod:(NSDictionary *)infoDict;
-@end
-
 @interface ThoMoNetworkStub ()
 
 -(void)sendDataWithInfoDict:(NSDictionary *)theInfoDict;
 
 @end
-
-
-
 
 // =====================================================================================================================
 #pragma mark -
@@ -77,30 +66,30 @@ NSString *const kThoMoNetworkPrefScopeSpecifierKey				= @"kThoMoNetworkPrefScope
 		NSString *scopeSpecifier = [[NSUserDefaults standardUserDefaults] stringForKey:kThoMoNetworkPrefScopeSpecifierKey];
 		if (scopeSpecifier)
 		{
-			protocolIdentifier = [scopeSpecifier stringByAppendingFormat:@"-%@", theProtocolIdentifier];
+			_protocolIdentifier = [scopeSpecifier stringByAppendingFormat:@"-%@", theProtocolIdentifier];
 			NSLog(@"Warning: ThoMo Networking Protocol Prefix in effect! If your app cannot connect to its counterpart that may be the reason.");
 		}
 		else
 		{
-			protocolIdentifier = [theProtocolIdentifier copy];
+			_protocolIdentifier = [theProtocolIdentifier copy];
 		}
 
-		if ([protocolIdentifier length] > 14)
+		if ([_protocolIdentifier length] > 14)
 		{
 			// clean up internally
 			[NSException raise:@"ThoMoInvalidArgumentException" 
 						format:@"The protocol identifier plus the optional scoping prefix (\"%@\") exceed"
-								" Bonjour's maximum allowed length of fourteen characters!", protocolIdentifier];
+								" Bonjour's maximum allowed length of fourteen characters!", _protocolIdentifier];
 		} 
 		
-		connections	= [[NSMutableDictionary alloc] init];
+		_connections	= [[NSMutableDictionary alloc] init];
 	}
 	return self;
 }
 
 -(id)init;
 {
-	return [self initWithProtocolIdentifier:@"thoMoNetworkStubDefaultIdentifier"];
+	return [self initWithProtocolIdentifier:[[[NSBundle mainBundle] infoDictionary] objectForKey:(NSString *)kCFBundleIdentifierKey]];
 }
 
 // since the networkThread retains our object while it executes, this method will be called after the thread is done
@@ -108,36 +97,29 @@ NSString *const kThoMoNetworkPrefScopeSpecifierKey				= @"kThoMoNetworkPrefScope
 // these methods are called on the main thread
 #pragma mark Control
 
--(void) start;
+-(void)start;
 {
-	if ([networkThread isExecuting])
+	if ([_networkThread isExecuting])
 	{
-		[NSException raise:@"ThoMoStubAlreadyRunningException" 
-					format:@"The client stub had already been started before and cannot be started twice."];
+		return;
 	}
 	
-	// TODO: check if we cannot run a start-stop-start cycle
-	NSAssert(networkThread == nil, @"Network thread not released properly");
-	
-	networkThread = [[NSThread alloc] initWithTarget:self selector:@selector(networkThreadEntry) object:nil];
-	[networkThread start];
+	_networkThread = [[NSThread alloc] initWithTarget:self selector:@selector(networkThreadEntry) object:nil];
+	[_networkThread start];
 }
 
--(void) stop;
+-(void)stop;
 {
-	[networkThread cancel];
-	
-	// TODO: check if we can release the networkthread here
+	[_networkThread cancel];
+	_networkThread = nil;
 }
 
 -(NSArray *)activeConnections;
 {
-	NSArray *result;
-	@synchronized(self)
+	@synchronized(_connections)
 	{
-		result = [[connections allKeys] copy];
+        return [[_connections allKeys] copy];
 	}
-	return result;
 }
 
 -(void)send:(id<NSCoding>)theData toConnection:(NSString *)theConnectionIdString;
@@ -148,12 +130,21 @@ NSString *const kThoMoNetworkPrefScopeSpecifierKey				= @"kThoMoNetworkPrefScope
 
 -(void)sendByteData:(NSData *)sendData toConnection:(NSString *)theConnectionIdString;
 {
-	NSDictionary *infoDict = [NSDictionary dictionaryWithObjectsAndKeys:
+    if (_networkThread == nil) {
+        NSLog(@"ThoMoNetworking - WARN: Trying to send data without calling start. Starting now...");
+        [self start];
+    }
+    
+    if ([sendData length] == 0) {   // nothing to send
+        return;
+    }
+	
+    NSDictionary *infoDict = [NSDictionary dictionaryWithObjectsAndKeys:
 							  sendData, @"DATA",
 							  theConnectionIdString, @"ID",
 							  nil];
 	
-	[self performSelector:@selector(sendDataWithInfoDict:) onThread:networkThread withObject:infoDict waitUntilDone:NO];
+	[self performSelector:@selector(sendDataWithInfoDict:) onThread:_networkThread withObject:infoDict waitUntilDone:NO];
 }
 
 #pragma mark Send Data Relay
@@ -165,9 +156,9 @@ NSString *const kThoMoNetworkPrefScopeSpecifierKey				= @"kThoMoNetworkPrefScope
 	NSString *theConnectionIdString = [theInfoDict objectForKey:@"ID"];
 	
 	ThoMoTCPConnection *connection = nil;
-	@synchronized(self)
+	@synchronized(_connections)
 	{
-		connection = [connections valueForKey:theConnectionIdString];
+		connection = [_connections objectForKey:theConnectionIdString];
 	}
 	
 	if (!connection) 
@@ -186,35 +177,23 @@ NSString *const kThoMoNetworkPrefScopeSpecifierKey				= @"kThoMoNetworkPrefScope
 
 -(void)networkThreadEntry
 {
-	#ifdef DEBUG
-		#ifdef THOMO_PTHREAD_NAMING_AVAILABLE
-			pthread_setname_np("ThoMoNetworking Dispatch Thread");
-		#endif
-	#endif
-	
 	@autoreleasepool {
 	
 		if([self setup])
-		{		
-			while (![networkThread isCancelled])
-			{
-				NSDate *inOneSecond = [[NSDate alloc] initWithTimeIntervalSinceNow:1];
-				
-				// catch exceptions and propagate to main thread
-				@try {
-					[[NSRunLoop currentRunLoop]	runMode:NSDefaultRunLoopMode beforeDate:inOneSecond];
-				}
-				@catch (NSException * e) {
-					[e performSelectorOnMainThread:@selector(raise) withObject:nil waitUntilDone:YES];
-				}
-				
-			}
-			
-			[self teardown];
+		{
+            @try {
+                while (![_networkThread isCancelled])
+                {
+                    NSDate *inOneSecond = [[NSDate alloc] initWithTimeIntervalSinceNow:1];
+                    [[NSRunLoop currentRunLoop]	runMode:NSDefaultRunLoopMode beforeDate:inOneSecond];
+                }
+            }
+            @finally {
+                [self teardown];
+            }
 		}
 		
 		[self performSelectorOnMainThread:@selector(networkStubDidShutDownRelayMethod) withObject:nil waitUntilDone:NO];
-	
 	}
 }
 
@@ -236,6 +215,7 @@ NSString *const kThoMoNetworkPrefScopeSpecifierKey				= @"kThoMoNetworkPrefScope
 	
 	// unarchive the data
 	id receivedData = [NSKeyedUnarchiver unarchiveObjectWithData:theData];
+    
 	
 	// package the parameters into an info dict and relay them to the main thread
 	NSDictionary *infoDict = [NSDictionary dictionaryWithObjectsAndKeys:	
@@ -269,9 +249,9 @@ NSString *const kThoMoNetworkPrefScopeSpecifierKey				= @"kThoMoNetworkPrefScope
 	
 	[theConnection close];
 	
-	@synchronized(self)
+	@synchronized(_connections)
 	{
-		[connections removeObjectForKey:connectionKey];
+		[_connections removeObjectForKey:connectionKey];
 	}
 	
 	NSDictionary *infoDict = [NSDictionary dictionaryWithObjectsAndKeys:	
@@ -288,19 +268,18 @@ NSString *const kThoMoNetworkPrefScopeSpecifierKey				= @"kThoMoNetworkPrefScope
 	NSString *connectionKey = [self keyForConnection:theConnection];
 	
 	NSError *theError = [theStream streamError];
-	NSString *userMessage = [NSString stringWithFormat:@"Error %li: \"%@\" on stream to %@! Terminating connection.", (long)[theError code], [theError localizedDescription], connectionKey];
 	
 	[theConnection close];
 	
-	@synchronized(self)
+	@synchronized(_connections)
 	{
-		[connections removeObjectForKey:connectionKey];
+		[_connections removeObjectForKey:connectionKey];
 	}
 	
 	NSDictionary *infoDict = [NSDictionary dictionaryWithObjectsAndKeys:	
 							  self,				kThoMoNetworkInfoKeyLocalNetworkStub,
 							  connectionKey,	kThoMoNetworkInfoKeyRemoteConnectionIdString,	
-							  userMessage,		kThoMoNetworkInfoKeyUserMessage,
+							  theError,		kThoMoNetworkInfoKeyUserMessage,
 							  nil];
 	
 	[self performSelectorOnMainThread:@selector(connectionLostRelayMethod:) withObject:infoDict waitUntilDone:NO];
@@ -322,13 +301,13 @@ NSString *const kThoMoNetworkPrefScopeSpecifierKey				= @"kThoMoNetworkPrefScope
 -(void)teardown
 {
 	// close all open connections
-	@synchronized(self)
+	@synchronized(_connections)
 	{
-		for (ThoMoTCPConnection *connection in [connections allValues]) {
+		for (ThoMoTCPConnection *connection in [_connections allValues]) {
 			[connection close];
 		}
 		
-		[connections removeAllObjects];		
+		[_connections removeAllObjects];
 	}
 }
 
@@ -340,22 +319,22 @@ NSString *const kThoMoNetworkPrefScopeSpecifierKey				= @"kThoMoNetworkPrefScope
 	//			You've been warned, though...
 	struct sockaddr_in *peerSocketAddress = (struct sockaddr_in *)[addr bytes];
 	
-	// convert in_addr to ascii (note: returns a pointer to a statically allocated buffer inside inet_ntoa! calling again will overwrite)
-	char *humanReadableAddress	= inet_ntoa(peerSocketAddress->sin_addr);
-	NSString *peerAddress		= [NSString stringWithCString:humanReadableAddress encoding:NSUTF8StringEncoding];
-	NSString *peerPort			= [NSString stringWithFormat:@"%d", ntohs(peerSocketAddress->sin_port)];
-	NSString *peerKey			= [NSString stringWithFormat:@"%@:%@", peerAddress, peerPort];
-	
-	return peerKey;
+    @synchronized(self) {
+        // convert in_addr to ascii (note: returns a pointer to a statically allocated buffer inside inet_ntoa! calling again will overwrite)
+        char *humanReadableAddress	= inet_ntoa(peerSocketAddress->sin_addr);
+        int peerPort                = ntohs(peerSocketAddress->sin_port);
+        NSString *peerKey			= [NSString stringWithFormat:@"%s:%d", humanReadableAddress, peerPort];
+        return peerKey;
+    }
 }
 
 -(NSString *)keyForConnection:(ThoMoTCPConnection *)theConnection;
 {
 	NSString	*connectionKey;
 	NSArray		*keys;
-	@synchronized(self)
+	@synchronized(_connections)
 	{
-		keys = [connections allKeysForObject:theConnection];
+		keys = [_connections allKeysForObject:theConnection];
 		NSAssert([keys count] == 1, @"More than one connection record in dict for a single connection.");
 		connectionKey = [[keys objectAtIndex:0] copy];
 	}
@@ -363,65 +342,20 @@ NSString *const kThoMoNetworkPrefScopeSpecifierKey				= @"kThoMoNetworkPrefScope
 	return connectionKey;
 }
 
-
 -(void)openNewConnection:(NSString *)theConnectionKey inputStream:(NSInputStream *)istr outputStream:(NSOutputStream *)ostr;
 {
 	// create a new ThoMoTCPConnection object and set ourselves as the delegate to forward the incoming data to our own delegate
 	ThoMoTCPConnection *newConnection = [[ThoMoTCPConnection alloc] initWithDelegate:self inputStream:istr outputStream:ostr];
 	
 	// store in our dictionary, open, and release our copy
-	@synchronized(self)
+	@synchronized(_connections)
 	{
 		// it should never happen that we overwrite a connection
-		NSAssert(![connections valueForKey:theConnectionKey], @"ERROR: Tried to create a connection with an IP and port that we already have a connection for.");
+		NSAssert(![_connections valueForKey:theConnectionKey], @"ERROR: Tried to create a connection with an IP and port that we already have a connection for.");
 		
-		[connections setValue:newConnection forKey:theConnectionKey];
+		[_connections setValue:newConnection forKey:theConnectionKey];
 	}
 	[newConnection open];
 }
-
-@end
-
-
-
-#pragma mark -
-#pragma mark Main Thread Relay Methods
-
-@implementation ThoMoNetworkStub (RelayMethods)
-
--(void)networkStubDidShutDownRelayMethod
-{
-	NSLog(@"%@ :: %@", [self description], NSStringFromSelector(_cmd));
-}
-
--(void)netServiceProblemRelayMethod:(NSDictionary *)infoDict
-{
-	NSLog(@"%@ :: %@", [self description], NSStringFromSelector(_cmd));
-}
-
--(void)didReceiveDataRelayMethod:(NSDictionary *)infoDict;
-{
-	NSLog(@"%@ :: %@", [self description], NSStringFromSelector(_cmd));
-}
-
--(void)connectionEstablishedRelayMethod:(NSDictionary *)infoDict;
-{
-	NSLog(@"%@ :: %@", [self description], NSStringFromSelector(_cmd));
-}
-
--(void)connectionLostRelayMethod:(NSDictionary *)infoDict;
-{
-	NSLog(@"%@ :: %@", [self description], NSStringFromSelector(_cmd));
-}
-
--(void)connectionClosedRelayMethod:(NSDictionary *)infoDict;
-{
-	NSLog(@"%@ :: %@", [self description], NSStringFromSelector(_cmd));
-}
-
-
-#pragma mark -
-#pragma mark Debugging
-
 
 @end

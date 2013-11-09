@@ -28,57 +28,43 @@
  *
  */
 
-#import "ThoMoClientStub_private.h"
+#import "ThoMoClientStub.h"
+#import "ThoMoNetworkStub_Private.h"
+
+#import "ThoMoClientDelegateProtocol.h"
 #import "ThoMoTCPConnection.h"
 
-// =====================================================================================================================
-#pragma mark -
-#pragma mark defines
-// ---------------------------------------------------------------------------------------------------------------------
+#pragma mark - defines
 
 #define kThoMoNetworkInfoKeyServer kThoMoNetworkInfoKeyRemoteConnectionIdString
 #define kThoMoNetworkInfoKeyClient kThoMoNetworkInfoKeyLocalNetworkStub
 
-// =====================================================================================================================
-
-
-
-
-
-// =====================================================================================================================
-#pragma mark -
-#pragma mark Class Extensions
-// ---------------------------------------------------------------------------------------------------------------------
+#pragma mark - Class Extensions
+#pragma mark
 
 @interface ThoMoClientStub()
+{
+	NSNetServiceBrowser *_browser;
+}
+
+@property (strong) NSMutableArray *offeredNetServices;
+@property (strong) NSMutableDictionary *connectedNetServices;
 
 -(void)netServiceProblemRelayMethod:(NSDictionary *)infoDict;
 -(void)didReceiveDataRelayMethod:(NSDictionary *)infoDict;
 
 -(void)resolveNetService:(NSNetService *)theNetService;
 
+-(void)sendBytes:(NSData *)theBytes toServer:(NSString *)theServerIdString;
+
+-(void)sendToAllServers:(id<NSCoding>)anObject;
+
 @end
-// =====================================================================================================================
 
-
-
-
-
-// =====================================================================================================================
-#pragma mark -
-#pragma mark ThoMoClientStub implementation
-// ---------------------------------------------------------------------------------------------------------------------
+#pragma mark - ThoMoClientStub implementation
+#pragma mark
 
 @implementation ThoMoClientStub
-
-
-#pragma mark -
-#pragma mark Properties
-
-@synthesize delegate;
-@synthesize offeredNetServices;
-@synthesize connectedNetServices;
-
 
 #pragma mark -
 #pragma mark Housekeeping
@@ -88,19 +74,16 @@
 	self = [super initWithProtocolIdentifier:theProtocolIdentifier];
 	if (self != nil) {
 		// add inits here
-		self.offeredNetServices		= [[NSMutableArray alloc] init];
-		self.connectedNetServices	= [[NSMutableDictionary alloc] init];
+		_offeredNetServices		= [[NSMutableArray alloc] init];
+		_connectedNetServices	= [[NSMutableDictionary alloc] init];
 	}
 	return self;
 }
-
 
 - (void) dealloc
 {
 	[self stop];
 }
-
-
 
 #pragma mark -
 #pragma mark Control
@@ -123,19 +106,22 @@
 	}
 }
 
-// DEPRECATED
--(void)sendData:(id<NSCoding>)theData toServer:(NSString *)theServerIdString;
-{
-	[self send:theData toServer:theServerIdString];
-}
-
 // PRIVATE API
 -(void)sendBytes:(NSData *)theBytes toServer:(NSString *)theServerIdString;
 {
 	[super sendByteData:theBytes toConnection:theServerIdString];
 }
 
+#pragma mark - override
 
+- (void)start {
+    [super start];
+}
+
+- (void)stop
+{
+    [super stop];
+}
 
 #pragma mark -
 #pragma mark Private Methods
@@ -147,9 +133,9 @@
 		return NO;
 	
 	//start NSNetServiceBrowser
-	browser = [[NSNetServiceBrowser alloc] init]; 
-	[browser setDelegate:self];
-	[browser searchForServicesOfType:[NSString stringWithFormat:@"_%@._tcp.", protocolIdentifier] inDomain:@"local"]; 
+	_browser = [[NSNetServiceBrowser alloc] init]; 
+	[_browser setDelegate:self];
+	[_browser searchForServicesOfType:[NSString stringWithFormat:@"_%@._tcp.", self.protocolIdentifier] inDomain:@"local"];
 	
 	return YES;
 }
@@ -158,8 +144,8 @@
 // override
 -(void)teardown;
 {
-	[browser stop]; 
-	browser = nil;
+	[_browser stop]; 
+	_browser = nil;
 	
 	[super teardown];
 }
@@ -307,7 +293,7 @@
 	[self.connectedNetServices removeObjectForKey:connectionKey];
 	
 	// try to re-resolve the netService if it is still offered by Bonjour
-	if ([offeredNetServices containsObject:connectionNetService])
+	if ([self.offeredNetServices containsObject:connectionNetService])
 	{
 		[self performSelector:@selector(resolveNetService:) withObject:connectionNetService afterDelay:1];
 	}	
@@ -327,7 +313,7 @@
 	[self.connectedNetServices removeObjectForKey:connectionKey];
 	
 	// try to re-resolve the netService if it is still offered by Bonjour
-	if ([offeredNetServices containsObject:connectionNetService])
+	if ([self.offeredNetServices containsObject:connectionNetService])
 	{
 		[self performSelector:@selector(resolveNetService:) withObject:connectionNetService afterDelay:1];
 	}
@@ -347,22 +333,22 @@
 // override
 -(void)netWorkStubDidShutDownRelayMethod
 {
-	if ([delegate respondsToSelector:@selector(clientDidShutDown:)])
-		[delegate clientDidShutDown:self];	
+	if ([_delegate respondsToSelector:@selector(clientDidShutDown:)])
+		[_delegate clientDidShutDown:self];
 }
 
 // override
 -(void)netServiceProblemRelayMethod:(NSDictionary *)infoDict
 {
-	if ([delegate respondsToSelector:@selector(netServiceProblemEncountered:onClient:)])
-		[delegate netServiceProblemEncountered:[infoDict objectForKey:@"kThoMoTCPInfoKeyUserMessage"] onClient:self];
+	if ([_delegate respondsToSelector:@selector(client:encounteredNetServiceError:)])
+        [_delegate client:self encounteredNetServiceError:[infoDict objectForKey:kThoMoNetworkInfoKeyUserMessage]];
 }
 
 // required
 // override
 -(void)didReceiveDataRelayMethod:(NSDictionary *)infoDict;
 {
-	[delegate client:[infoDict objectForKey:kThoMoNetworkInfoKeyClient] 
+	[_delegate client:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]
 	  didReceiveData:[infoDict objectForKey:kThoMoNetworkInfoKeyData] 
 		  fromServer:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]];
 }
@@ -370,27 +356,27 @@
 // override
 -(void)connectionEstablishedRelayMethod:(NSDictionary *)infoDict;
 {
-	if ([delegate respondsToSelector:@selector(client:didConnectToServer:)])
-		[delegate client:[infoDict objectForKey:kThoMoNetworkInfoKeyClient] 
+	if ([_delegate respondsToSelector:@selector(client:didConnectToServer:)])
+		[_delegate client:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]
 	  didConnectToServer:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]];
 }
 
 // override
 -(void)connectionLostRelayMethod:(NSDictionary *)infoDict;
 {
-	if ([delegate respondsToSelector:@selector(client:didDisconnectFromServer:errorMessage:)])
-		[delegate client:[infoDict objectForKey:kThoMoNetworkInfoKeyClient] 
- didDisconnectFromServer:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]
-			errorMessage:[infoDict objectForKey:kThoMoNetworkInfoKeyUserMessage]];
+	if ([_delegate respondsToSelector:@selector(client:didDisconnectFromServer:error:)])
+		[_delegate client:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]
+  didDisconnectFromServer:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]
+                    error:[infoDict objectForKey:kThoMoNetworkInfoKeyUserMessage]];
 }
 
 // override
 -(void)connectionClosedRelayMethod:(NSDictionary *)infoDict;
 {
-	if ([delegate respondsToSelector:@selector(client:didDisconnectFromServer:errorMessage:)])
-		[delegate client:[infoDict objectForKey:kThoMoNetworkInfoKeyClient] 
- didDisconnectFromServer:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]
-			errorMessage:[infoDict objectForKey:kThoMoNetworkInfoKeyUserMessage]];
+	if ([_delegate respondsToSelector:@selector(client:didDisconnectFromServer:error:)])
+		[_delegate client:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]
+  didDisconnectFromServer:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]
+                    error:[infoDict objectForKey:kThoMoNetworkInfoKeyUserMessage]];
 }
 
 

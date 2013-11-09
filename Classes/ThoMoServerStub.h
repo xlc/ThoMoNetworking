@@ -28,17 +28,17 @@
  *
  */
 
-#import "ThoMoServerDelegateProtocol.h"
+#import "ThoMoNetworkStub.h"
 
-@interface ThoMoServerStub : NSObject
-{
-}
+@protocol ThoMoServerDelegateProtocol;
+
+@interface ThoMoServerStub : ThoMoNetworkStub
 
 /// Delegate accessor
 /**
  Accessor for the server stubs delegate. Must be compliant to ThoMoServerDelegateProtocol.
  */
-@property (assign) id<ThoMoServerDelegateProtocol> delegate;
+@property (weak) id<ThoMoServerDelegateProtocol> delegate;
 
 
 
@@ -105,7 +105,4 @@
  */
 -(void)sendToAllClients:(id<NSCoding>)theData;
 
-
-
--(void)sendData:(id<NSCoding>)theData toClient:(NSString *)theClientIdString DEPRECATED_ATTRIBUTE;
 @end

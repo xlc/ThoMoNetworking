@@ -8,10 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		066048E01828DDDC002D2ACE /* ThoMoClientDelegateProtocol.h in Headers */ = {isa = PBXBuildFile; fileRef = A45F9BEC1067CBFA00FEA464 /* ThoMoClientDelegateProtocol.h */; };
-		066048E11828DDDC002D2ACE /* ThoMoClientStub_private.h in Headers */ = {isa = PBXBuildFile; fileRef = A45F9BED1067CBFA00FEA464 /* ThoMoClientStub_private.h */; };
 		066048E21828DDDC002D2ACE /* ThoMoNetworkStub.h in Headers */ = {isa = PBXBuildFile; fileRef = A45F9BEF1067CBFA00FEA464 /* ThoMoNetworkStub.h */; };
 		066048E31828DDDC002D2ACE /* ThoMoServerDelegateProtocol.h in Headers */ = {isa = PBXBuildFile; fileRef = A45F9BF21067CBFA00FEA464 /* ThoMoServerDelegateProtocol.h */; };
-		066048E41828DDDC002D2ACE /* ThoMoServerStub_private.h in Headers */ = {isa = PBXBuildFile; fileRef = A45F9BF31067CBFA00FEA464 /* ThoMoServerStub_private.h */; };
 		066048E51828DDDC002D2ACE /* ThoMoTCPConnection.h in Headers */ = {isa = PBXBuildFile; fileRef = A45F9BF51067CBFA00FEA464 /* ThoMoTCPConnection.h */; };
 		066048E61828DDDC002D2ACE /* ThoMoTCPConnectionDelegateProtocol.h in Headers */ = {isa = PBXBuildFile; fileRef = A45F9BF71067CBFA00FEA464 /* ThoMoTCPConnectionDelegateProtocol.h */; };
 		066048E71828DDDC002D2ACE /* ThoMoClientStub.h in Headers */ = {isa = PBXBuildFile; fileRef = A4B650701070F75D004C8087 /* ThoMoClientStub.h */; };
@@ -23,10 +21,8 @@
 		066048EE1828DDDC002D2ACE /* ThoMoTCPConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = A45F9BF61067CBFA00FEA464 /* ThoMoTCPConnection.m */; };
 		066048F01828DDDC002D2ACE /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A40F345A11AC40E6009AAB48 /* Foundation.framework */; };
 		A40F344C11AC40CB009AAB48 /* ThoMoClientDelegateProtocol.h in Headers */ = {isa = PBXBuildFile; fileRef = A45F9BEC1067CBFA00FEA464 /* ThoMoClientDelegateProtocol.h */; };
-		A40F344D11AC40CB009AAB48 /* ThoMoClientStub_private.h in Headers */ = {isa = PBXBuildFile; fileRef = A45F9BED1067CBFA00FEA464 /* ThoMoClientStub_private.h */; };
 		A40F344E11AC40CB009AAB48 /* ThoMoNetworkStub.h in Headers */ = {isa = PBXBuildFile; fileRef = A45F9BEF1067CBFA00FEA464 /* ThoMoNetworkStub.h */; };
 		A40F344F11AC40CB009AAB48 /* ThoMoServerDelegateProtocol.h in Headers */ = {isa = PBXBuildFile; fileRef = A45F9BF21067CBFA00FEA464 /* ThoMoServerDelegateProtocol.h */; };
-		A40F345011AC40CB009AAB48 /* ThoMoServerStub_private.h in Headers */ = {isa = PBXBuildFile; fileRef = A45F9BF31067CBFA00FEA464 /* ThoMoServerStub_private.h */; };
 		A40F345111AC40CB009AAB48 /* ThoMoTCPConnection.h in Headers */ = {isa = PBXBuildFile; fileRef = A45F9BF51067CBFA00FEA464 /* ThoMoTCPConnection.h */; };
 		A40F345211AC40CB009AAB48 /* ThoMoTCPConnectionDelegateProtocol.h in Headers */ = {isa = PBXBuildFile; fileRef = A45F9BF71067CBFA00FEA464 /* ThoMoTCPConnectionDelegateProtocol.h */; };
 		A40F345311AC40CB009AAB48 /* ThoMoClientStub.h in Headers */ = {isa = PBXBuildFile; fileRef = A4B650701070F75D004C8087 /* ThoMoClientStub.h */; };
@@ -40,25 +36,24 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		063914A4182A4C3B007876B5 /* ThoMoNetworkStub_Private.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ThoMoNetworkStub_Private.h; sourceTree = "<group>"; };
 		066048F41828DDDC002D2ACE /* libThoMoNetworking.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libThoMoNetworking.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		32DBCF5E0370ADEE00C91783 /* ThoMoNetworking_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ThoMoNetworking_Prefix.pch; sourceTree = "<group>"; };
 		8DC2EF5A0486A6940098B216 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A40F344811AC4061009AAB48 /* libThoMoNetworking-ios.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libThoMoNetworking-ios.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A40F345A11AC40E6009AAB48 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
-		A45F9BEC1067CBFA00FEA464 /* ThoMoClientDelegateProtocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ThoMoClientDelegateProtocol.h; path = ThoMoClient/ThoMoClientDelegateProtocol.h; sourceTree = "<group>"; };
-		A45F9BED1067CBFA00FEA464 /* ThoMoClientStub_private.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ThoMoClientStub_private.h; sourceTree = "<group>"; };
+		A45F9BEC1067CBFA00FEA464 /* ThoMoClientDelegateProtocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ThoMoClientDelegateProtocol.h; sourceTree = "<group>"; };
 		A45F9BEE1067CBFA00FEA464 /* ThoMoClientStub.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ThoMoClientStub.m; sourceTree = "<group>"; };
 		A45F9BEF1067CBFA00FEA464 /* ThoMoNetworkStub.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ThoMoNetworkStub.h; sourceTree = "<group>"; };
 		A45F9BF01067CBFA00FEA464 /* ThoMoNetworkStub.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ThoMoNetworkStub.m; sourceTree = "<group>"; };
-		A45F9BF21067CBFA00FEA464 /* ThoMoServerDelegateProtocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ThoMoServerDelegateProtocol.h; path = ThoMoServer/ThoMoServerDelegateProtocol.h; sourceTree = "<group>"; };
-		A45F9BF31067CBFA00FEA464 /* ThoMoServerStub_private.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ThoMoServerStub_private.h; sourceTree = "<group>"; };
+		A45F9BF21067CBFA00FEA464 /* ThoMoServerDelegateProtocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ThoMoServerDelegateProtocol.h; sourceTree = "<group>"; };
 		A45F9BF41067CBFA00FEA464 /* ThoMoServerStub.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ThoMoServerStub.m; sourceTree = "<group>"; };
 		A45F9BF51067CBFA00FEA464 /* ThoMoTCPConnection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ThoMoTCPConnection.h; sourceTree = "<group>"; };
 		A45F9BF61067CBFA00FEA464 /* ThoMoTCPConnection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ThoMoTCPConnection.m; sourceTree = "<group>"; };
 		A45F9BF71067CBFA00FEA464 /* ThoMoTCPConnectionDelegateProtocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ThoMoTCPConnectionDelegateProtocol.h; sourceTree = "<group>"; };
 		A478F0F0114FC16A0028F5C8 /* ThoMoNetworking.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ThoMoNetworking.h; sourceTree = "<group>"; };
-		A4B650701070F75D004C8087 /* ThoMoClientStub.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ThoMoClientStub.h; sourceTree = "<group>"; };
-		A4B650721070F769004C8087 /* ThoMoServerStub.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ThoMoServerStub.h; sourceTree = "<group>"; };
+		A4B650701070F75D004C8087 /* ThoMoClientStub.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ThoMoClientStub.h; path = Classes/ThoMoClientStub.h; sourceTree = SOURCE_ROOT; };
+		A4B650721070F769004C8087 /* ThoMoServerStub.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ThoMoServerStub.h; path = Classes/ThoMoServerStub.h; sourceTree = SOURCE_ROOT; };
 		A4EABF9511AC035000F8C12E /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -89,6 +84,16 @@
 				066048F41828DDDC002D2ACE /* libThoMoNetworking.a */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		063914A6182A4E43007876B5 /* ThoMoNetworkStub */ = {
+			isa = PBXGroup;
+			children = (
+				A45F9BEF1067CBFA00FEA464 /* ThoMoNetworkStub.h */,
+				063914A4182A4C3B007876B5 /* ThoMoNetworkStub_Private.h */,
+				A45F9BF01067CBFA00FEA464 /* ThoMoNetworkStub.m */,
+			);
+			name = ThoMoNetworkStub;
 			sourceTree = "<group>";
 		};
 		0867D691FE84028FC02AAC07 /* ThoMoNetworkingFramework */ = {
@@ -123,9 +128,8 @@
 		08FB77AEFE84172EC02AAC07 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
-				A4B6506F1070F678004C8087 /* Public Headers */,
-				A45F9BEF1067CBFA00FEA464 /* ThoMoNetworkStub.h */,
-				A45F9BF01067CBFA00FEA464 /* ThoMoNetworkStub.m */,
+				A478F0F0114FC16A0028F5C8 /* ThoMoNetworking.h */,
+				063914A6182A4E43007876B5 /* ThoMoNetworkStub */,
 				A45F9BEB1067CBFA00FEA464 /* ThoMoClient */,
 				A45F9BF11067CBFA00FEA464 /* ThoMoServer */,
 				A497E96F10F3894C00C57216 /* ThoMoTCPConnection */,
@@ -144,7 +148,8 @@
 		A45F9BEB1067CBFA00FEA464 /* ThoMoClient */ = {
 			isa = PBXGroup;
 			children = (
-				A45F9BED1067CBFA00FEA464 /* ThoMoClientStub_private.h */,
+				A45F9BEC1067CBFA00FEA464 /* ThoMoClientDelegateProtocol.h */,
+				A4B650701070F75D004C8087 /* ThoMoClientStub.h */,
 				A45F9BEE1067CBFA00FEA464 /* ThoMoClientStub.m */,
 			);
 			path = ThoMoClient;
@@ -153,7 +158,8 @@
 		A45F9BF11067CBFA00FEA464 /* ThoMoServer */ = {
 			isa = PBXGroup;
 			children = (
-				A45F9BF31067CBFA00FEA464 /* ThoMoServerStub_private.h */,
+				A45F9BF21067CBFA00FEA464 /* ThoMoServerDelegateProtocol.h */,
+				A4B650721070F769004C8087 /* ThoMoServerStub.h */,
 				A45F9BF41067CBFA00FEA464 /* ThoMoServerStub.m */,
 			);
 			path = ThoMoServer;
@@ -169,18 +175,6 @@
 			name = ThoMoTCPConnection;
 			sourceTree = "<group>";
 		};
-		A4B6506F1070F678004C8087 /* Public Headers */ = {
-			isa = PBXGroup;
-			children = (
-				A478F0F0114FC16A0028F5C8 /* ThoMoNetworking.h */,
-				A45F9BEC1067CBFA00FEA464 /* ThoMoClientDelegateProtocol.h */,
-				A45F9BF21067CBFA00FEA464 /* ThoMoServerDelegateProtocol.h */,
-				A4B650701070F75D004C8087 /* ThoMoClientStub.h */,
-				A4B650721070F769004C8087 /* ThoMoServerStub.h */,
-			);
-			name = "Public Headers";
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -189,10 +183,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				066048E01828DDDC002D2ACE /* ThoMoClientDelegateProtocol.h in Headers */,
-				066048E11828DDDC002D2ACE /* ThoMoClientStub_private.h in Headers */,
 				066048E21828DDDC002D2ACE /* ThoMoNetworkStub.h in Headers */,
 				066048E31828DDDC002D2ACE /* ThoMoServerDelegateProtocol.h in Headers */,
-				066048E41828DDDC002D2ACE /* ThoMoServerStub_private.h in Headers */,
 				066048E51828DDDC002D2ACE /* ThoMoTCPConnection.h in Headers */,
 				066048E61828DDDC002D2ACE /* ThoMoTCPConnectionDelegateProtocol.h in Headers */,
 				066048E71828DDDC002D2ACE /* ThoMoClientStub.h in Headers */,
@@ -206,10 +198,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				A40F344C11AC40CB009AAB48 /* ThoMoClientDelegateProtocol.h in Headers */,
-				A40F344D11AC40CB009AAB48 /* ThoMoClientStub_private.h in Headers */,
 				A40F344E11AC40CB009AAB48 /* ThoMoNetworkStub.h in Headers */,
 				A40F344F11AC40CB009AAB48 /* ThoMoServerDelegateProtocol.h in Headers */,
-				A40F345011AC40CB009AAB48 /* ThoMoServerStub_private.h in Headers */,
 				A40F345111AC40CB009AAB48 /* ThoMoTCPConnection.h in Headers */,
 				A40F345211AC40CB009AAB48 /* ThoMoTCPConnectionDelegateProtocol.h in Headers */,
 				A40F345311AC40CB009AAB48 /* ThoMoClientStub.h in Headers */,

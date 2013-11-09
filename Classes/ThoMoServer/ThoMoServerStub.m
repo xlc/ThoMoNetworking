@@ -29,7 +29,9 @@
  */
 
 
-#import "ThoMoServerStub_private.h"
+#import "ThoMoServerStub.h"
+#import "ThoMoNetworkStub_Private.h"
+
 #import <sys/socket.h>
 #import <netinet/in.h>
 #import <arpa/inet.h>
@@ -37,6 +39,8 @@
 
 #import <unistd.h>
 #import <CFNetwork/CFNetwork.h>
+
+#import "ThoMoServerDelegateProtocol.h"
 
 #define kThoMoNetworkInfoKeyServer kThoMoNetworkInfoKeyLocalNetworkStub
 #define kThoMoNetworkInfoKeyClient kThoMoNetworkInfoKeyRemoteConnectionIdString
@@ -54,43 +58,27 @@
 #pragma mark Private Interfaces
 #pragma mark -
 
-// interface extension for 'private' properties
-@interface ThoMoServerStub() 
+@interface ThoMoServerStub()
+{
+	CFSocketRef			_listenSocket;
+}
+
+
 @property (nonatomic, strong)	NSNetService	*netService;
 @property (assign)				uint16_t		listenPort;
-@end
 
-// interface category for private methods
-@interface ThoMoServerStub(Private)
+-(void)send:(id<NSCoding>)anObject toClient:(NSString *)theClientIdString;
+-(void)sendToAllClients:(id<NSCoding>)theData;
+
 -(void) handleNewConnectionFromAddress:(NSData *)addr inputStream:(NSInputStream *)istr outputStream:(NSOutputStream *)ostr;
+
 @end
-
-// interface category for main thread relay methods
-@interface ThoMoServerStub(RelayMethods)
--(void)netServiceProblemRelayMethod:(NSDictionary *)infoDict;
--(void)didReceiveDataRelayMethod:(NSDictionary *)infoDict;
--(void)clientDidConnectToServerRelayMethod:(NSDictionary *)infoDict;
--(void)clientDidDisconnectFromServerRelayMethod:(NSDictionary *)infoDict;
-@end
-
-// =====================================================================================================================
-
-
-
-
-
-// =====================================================================================================================
 
 #pragma mark -
 #pragma mark ServerStub
 #pragma mark -
 
 @implementation ThoMoServerStub
-
-#pragma mark Properties
-
-@synthesize delegate;
-
 
 #pragma mark Housekeeping
 
@@ -110,8 +98,6 @@
 	self = [self initWithProtocolIdentifier:theProtocolIdentifier andPort:SOME_FREE_PORT];
 	return self;
 }
-
-
 
 #pragma mark Control
 
@@ -134,30 +120,19 @@
 	}
 }
 
--(void)sendData:(id<NSCoding>)theData toClient:(NSString *)theClientIdString;
-{
-	[self send:theData toClient:theClientIdString];
+
+#pragma mark - override
+
+- (void)start {
+    [super start];
 }
 
--(void)sendBytes:(NSData *)theBytes toClient:(NSString *)theClientIdString;
+- (void)stop
 {
-	[super sendByteData:theBytes toConnection:theClientIdString];
+    [super stop];
 }
 
-
-
-
-// ---------------------------------------------------------------------------------------------------------------------
 #pragma mark -
-#pragma mark Private
-// ---------------------------------------------------------------------------------------------------------------------
-
-#pragma mark Properties
-
-@synthesize netService;
-@synthesize listenPort;
-
-
 #pragma mark Callbacks
 
 // This function is called by CFSocket when a new connection comes in at our listening socket.
@@ -206,7 +181,7 @@ static void ServerStubAcceptCallback(CFSocketRef listenSocket, CFSocketCallBackT
 }
 
 
-#pragma mark Methods
+#pragma mark - Methods
 
 -(void) handleNewConnectionFromAddress:(NSData *)addr inputStream:(NSInputStream *)istr outputStream:(NSOutputStream *)ostr;
 {
@@ -230,14 +205,14 @@ static void ServerStubAcceptCallback(CFSocketRef listenSocket, CFSocketCallBackT
 	CFSocketContext socketContext = {APPLE_DEFINED_ZERO, (__bridge void *)(self), NO_INFO_RETAIN_CALLBACK, NO_INFO_RELEASE_CALLBACK, NO_INFO_COPY_DESCRIPTION_CALLBACK};
 	
 	// create the socket we will use to listen for incoming connections. Here, we can directly install an auto-accepting callback on the socket - handy!
-	listenSocket = CFSocketCreate(kCFAllocatorDefault, PF_INET, SOCK_STREAM, IPPROTO_TCP, kCFSocketAcceptCallBack, (CFSocketCallBack)&ServerStubAcceptCallback, &socketContext);
-	if (NULL == listenSocket)
+	_listenSocket = CFSocketCreate(kCFAllocatorDefault, PF_INET, SOCK_STREAM, IPPROTO_TCP, kCFSocketAcceptCallBack, (CFSocketCallBack)&ServerStubAcceptCallback, &socketContext);
+	if (NULL == _listenSocket)
 		//TODO: raise exception etc...
 		return NO;
 	
 	// set socket options to reuse socket if the connection breaks
 	int yes = 1;
-	setsockopt(CFSocketGetNative(listenSocket), SOL_SOCKET, SO_REUSEADDR, (void *)&yes, sizeof(yes));
+	setsockopt(CFSocketGetNative(_listenSocket), SOL_SOCKET, SO_REUSEADDR, (void *)&yes, sizeof(yes));
 	
 	// fill in the address structure we will use to bind the socket (let the kernel choose the port automatically)
 	struct sockaddr_in listenSocketAddress;
@@ -249,23 +224,23 @@ static void ServerStubAcceptCallback(CFSocketRef listenSocket, CFSocketCallBackT
 	NSData *listenSocketAddressData		= [NSData dataWithBytes:&listenSocketAddress length:sizeof(listenSocketAddress)];
 	
 	// bind & listen (in cocoa this is done via the CFSocketSetAddress call)
-	if (kCFSocketSuccess != CFSocketSetAddress(listenSocket, (__bridge CFDataRef)listenSocketAddressData))
+	if (kCFSocketSuccess != CFSocketSetAddress(_listenSocket, (__bridge CFDataRef)listenSocketAddressData))
 	{
-		if (listenSocket) CFRelease(listenSocket);
-		listenSocket = NULL;
+		if (_listenSocket) CFRelease(_listenSocket);
+		_listenSocket = NULL;
 		//TODO: raise exception etc...
 		return NO;
 	}
 	
 	// get the port number the kernel chose for us (we need it for bonjour)
-	listenSocketAddressData = (NSData *)CFBridgingRelease(CFSocketCopyAddress(listenSocket));
+	listenSocketAddressData = (NSData *)CFBridgingRelease(CFSocketCopyAddress(_listenSocket));
 	memcpy(&listenSocketAddress, [listenSocketAddressData bytes], [listenSocketAddressData length]);
 		
 	self.listenPort = ntohs(listenSocketAddress.sin_port);
 	
 	// create a RunLoopSource from the socket
 	CFRunLoopRef		runLoop				= CFRunLoopGetCurrent();
-	CFRunLoopSourceRef	listenSocketSource	= CFSocketCreateRunLoopSource(kCFAllocatorDefault, listenSocket, 0);
+	CFRunLoopSourceRef	listenSocketSource	= CFSocketCreateRunLoopSource(kCFAllocatorDefault, _listenSocket, 0);
 	
 	// add it to the runloop
 	CFRunLoopAddSource(runLoop, listenSocketSource, kCFRunLoopCommonModes);
@@ -285,13 +260,13 @@ static void ServerStubAcceptCallback(CFSocketRef listenSocket, CFSocketCallBackT
 	// It should also be descriptive and human-readable
 	// See the following for more information:
 	// http://developer.apple.com/networking/bonjour/faq.html
-	NSString *protocol	= [NSString stringWithFormat:@"_%@._tcp.", protocolIdentifier];
+	NSString *protocol	= [NSString stringWithFormat:@"_%@._tcp.", self.protocolIdentifier];
 	
 	// create our service object which we want to publish
 	self.netService = [[NSNetService alloc] initWithDomain:domain type:protocol name:name port:self.listenPort];
 	if(nil == self.netService) {
-		if (listenSocket) CFRelease(listenSocket);
-		listenSocket = NULL;
+		if (_listenSocket) CFRelease(_listenSocket);
+		_listenSocket = NULL;
 		//TODO: raise exception etc...
 		return NO;
 	}
@@ -318,14 +293,14 @@ static void ServerStubAcceptCallback(CFSocketRef listenSocket, CFSocketCallBackT
 	self.netService = nil;
 	
 	// invalidate the socket (also removes it from the run loop and releases the socket context structure)
-	if (listenSocket) {
-		CFSocketInvalidate(listenSocket);
+	if (_listenSocket) {
+		CFSocketInvalidate(_listenSocket);
 	}
 	
 	// release the socket
-	if (listenSocket) {
-		CFRelease(listenSocket);
-		listenSocket = NULL;
+	if (_listenSocket) {
+		CFRelease(_listenSocket);
+		_listenSocket = NULL;
 	}
 	
 	[super teardown];
@@ -340,45 +315,29 @@ static void ServerStubAcceptCallback(CFSocketRef listenSocket, CFSocketCallBackT
 
 #pragma mark Bonjour
 
-- (void)netServiceWillPublish:(NSNetService *)sender;
-{
-	NSLog(@"Netservice is about to be published.");
-}
-
-
 - (void)netService:(NSNetService *)sender didNotPublish:(NSDictionary *)errorDict;
 {
-	if([sender isEqual:netService])
+	if([sender isEqual:self.netService])
 	{
-		NSString *userMessage = [NSString stringWithFormat:@"Our Netservice did not publish. Error %@", [errorDict objectForKey:NSNetServicesErrorCode]];
+        NSError *error = [NSError errorWithDomain:[errorDict objectForKey:NSNetServicesErrorDomain] code:[[errorDict objectForKey:NSNetServicesErrorCode] intValue] userInfo:errorDict];
 		
 		NSDictionary *infoDict = [NSDictionary dictionaryWithObjectsAndKeys:
 								  self,			kThoMoNetworkInfoKeyServer,
-								  userMessage,	kThoMoNetworkInfoKeyUserMessage,
+								  error,        kThoMoNetworkInfoKeyUserMessage,
 								  nil];
 		
 		[self performSelectorOnMainThread:@selector(netServiceProblemRelayMethod:) withObject:infoDict waitUntilDone:NO];
 	}
 }
 
-
-- (void)netServiceDidPublish:(NSNetService *)sender;
-{
-	NSLog(@"Netservice has been published.");
-}
-
-
 - (void)netServiceDidStop:(NSNetService *)sender;
 {
-	if([sender isEqual:netService])
+	if([sender isEqual:self.netService])
 	{
-		NSString *userMessage = [NSString stringWithFormat:@"Our Netservice did stop!"];
-		
 		NSDictionary *infoDict = [NSDictionary dictionaryWithObjectsAndKeys:
 								  self,			kThoMoNetworkInfoKeyServer,
-								  userMessage,	kThoMoNetworkInfoKeyUserMessage,
 								  nil];
-		
+        // TODO this is not error/problem, should just send server stop message
 		[self performSelectorOnMainThread:@selector(netServiceProblemRelayMethod:) withObject:infoDict waitUntilDone:NO];
 	}
 }
@@ -392,22 +351,22 @@ static void ServerStubAcceptCallback(CFSocketRef listenSocket, CFSocketCallBackT
 
 -(void)networkStubDidShutDownRelayMethod
 {
-	if ([delegate respondsToSelector:@selector(serverDidShutDown:)])
-		[delegate serverDidShutDown:self];
+	if ([_delegate respondsToSelector:@selector(serverDidShutDown:)])
+		[_delegate serverDidShutDown:self];
 }
 
 
 -(void)netServiceProblemRelayMethod:(NSDictionary *)infoDict
 {
-	if ([delegate respondsToSelector:@selector(netServiceProblemEncountered:onServer:)])
-		[delegate netServiceProblemEncountered:[infoDict objectForKey:kThoMoNetworkInfoKeyUserMessage] onServer:self];
+	if ([_delegate respondsToSelector:@selector(server:encounteredNetServiceError:)])
+        [_delegate server:self encounteredNetServiceError:[infoDict objectForKey:kThoMoNetworkInfoKeyUserMessage]];
 }
 
 
 // required
 -(void)didReceiveDataRelayMethod:(NSDictionary *)infoDict;
 {
-	[delegate server:[infoDict objectForKey:kThoMoNetworkInfoKeyServer] 
+	[_delegate server:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]
 	  didReceiveData:[infoDict objectForKey:kThoMoNetworkInfoKeyData] 
 		  fromClient:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]];
 }
@@ -415,26 +374,26 @@ static void ServerStubAcceptCallback(CFSocketRef listenSocket, CFSocketCallBackT
 
 -(void)connectionEstablishedRelayMethod:(NSDictionary *)infoDict;
 {
-	if ([delegate respondsToSelector:@selector(server:acceptedConnectionFromClient:)])
-		[delegate server:[infoDict objectForKey:kThoMoNetworkInfoKeyServer] acceptedConnectionFromClient:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]];
+	if ([_delegate respondsToSelector:@selector(server:acceptedConnectionFromClient:)])
+		[_delegate server:[infoDict objectForKey:kThoMoNetworkInfoKeyServer] acceptedConnectionFromClient:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]];
 }
 
 
 -(void)connectionLostRelayMethod:(NSDictionary *)infoDict;
 {
-	if ([delegate respondsToSelector:@selector(server:lostConnectionToClient:errorMessage:)])
-		[delegate server:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]
+	if ([_delegate respondsToSelector:@selector(server:lostConnectionToClient:error:)])
+		[_delegate server:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]
   lostConnectionToClient:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]
-			errorMessage:[infoDict objectForKey:kThoMoNetworkInfoKeyUserMessage]];
+                   error:[infoDict objectForKey:kThoMoNetworkInfoKeyUserMessage]];
 }
 
 
 -(void)connectionClosedRelayMethod:(NSDictionary *)infoDict;
 {
-	if ([delegate respondsToSelector:@selector(server:lostConnectionToClient:errorMessage:)])
-		[delegate server:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]
+	if ([_delegate respondsToSelector:@selector(server:lostConnectionToClient:error:)])
+		[_delegate server:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]
   lostConnectionToClient:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]
-			errorMessage:[infoDict objectForKey:kThoMoNetworkInfoKeyUserMessage]];
+                   error:[infoDict objectForKey:kThoMoNetworkInfoKeyUserMessage]];
 }
 
 
