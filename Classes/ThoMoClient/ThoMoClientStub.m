@@ -33,6 +33,7 @@
 
 #import "ThoMoClientDelegateProtocol.h"
 #import "ThoMoTCPConnection.h"
+#import "ThoMoServerProxy_Private.h"
 
 #pragma mark - defines
 
@@ -45,6 +46,8 @@
 @interface ThoMoClientStub()
 {
 	NSNetServiceBrowser *_browser;
+    
+    NSMutableDictionary *_serverDict;   // key: string, value: block holding a weak reference to a ServerProxy
 }
 
 @property (strong) NSMutableArray *offeredNetServices;
@@ -54,10 +57,6 @@
 -(void)didReceiveDataRelayMethod:(NSDictionary *)infoDict;
 
 -(void)resolveNetService:(NSNetService *)theNetService;
-
--(void)sendBytes:(NSData *)theBytes toServer:(NSString *)theServerIdString;
-
--(void)sendToAllServers:(id<NSCoding>)anObject;
 
 @end
 
@@ -76,6 +75,7 @@
 		// add inits here
 		_offeredNetServices		= [[NSMutableArray alloc] init];
 		_connectedNetServices	= [[NSMutableDictionary alloc] init];
+        _serverDict = [NSMutableDictionary dictionary];
 	}
 	return self;
 }
@@ -106,7 +106,6 @@
 	}
 }
 
-// PRIVATE API
 -(void)sendBytes:(NSData *)theBytes toServer:(NSString *)theServerIdString;
 {
 	[super sendByteData:theBytes toConnection:theServerIdString];
@@ -156,9 +155,7 @@
 {
 	NSData *addr = [[theService addresses] objectAtIndex:0];
 	
-	NSMutableString *peerKey = [[self keyStringFromAddress:addr] mutableCopy];
-	
-	return peerKey;
+	return [self keyStringFromAddress:addr];
 }
 
 #pragma mark -
@@ -379,7 +376,28 @@
                     error:[infoDict objectForKey:kThoMoNetworkInfoKeyUserMessage]];
 }
 
+#pragma mark - server proxy
 
+- (ThoMoServerProxy *)serverProxyForId:(NSString *)serverIdString
+{
+    ThoMoServerProxy *proxy;
+    id (^block)(void);
+    block = _serverDict[serverIdString];
+    if (block) {
+        proxy = block();
+        if (proxy) {
+            return proxy;
+        }
+    }
+    
+    proxy = [[ThoMoServerProxy alloc] initWithClient:self andConnectionString:serverIdString];
+    
+    __weak id weakproxy = proxy;
+    
+    _serverDict[serverIdString] = [^() { return weakproxy; } copy];
+    
+    return proxy;
+}
 
 
 @end

@@ -161,15 +161,7 @@ NSString *const kThoMoNetworkPrefScopeSpecifierKey				= @"kThoMoNetworkPrefScope
 		connection = [_connections objectForKey:theConnectionIdString];
 	}
 	
-	if (!connection) 
-	{
-		[NSException raise:@"ThoMoInvalidArgumentException" 
-					format:@"No connection found for id %@", theConnectionIdString];
-	}
-	else
-	{		
-		[connection enqueueNextSendObject:sendData];
-	}
+    [connection enqueueNextSendObject:sendData];
 }
 
 

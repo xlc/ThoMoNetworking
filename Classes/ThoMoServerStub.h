@@ -32,6 +32,8 @@
 
 @protocol ThoMoServerDelegateProtocol;
 
+@class ThoMoClientProxy;
+
 @interface ThoMoServerStub : ThoMoNetworkStub
 
 /// Delegate accessor
@@ -93,7 +95,7 @@
  \throws ThoMoInvalidArgumentException if theServerIdString does not designate a client the stub is connected to.
  */
 -(void)send:(id<NSCoding>)anObject toClient:(NSString *)theClientIdString;
-
+-(void)sendBytes:(NSData *)theBytes toClient:(NSString *)theClientIdString;
 
 
 /// Sends an object to all connected clients
@@ -104,5 +106,7 @@
  \param[in] anObject An NSCoding compliant object that will be copied and re-created at the client stubs.
  */
 -(void)sendToAllClients:(id<NSCoding>)theData;
+
+- (ThoMoClientProxy *)clientProxyForId:(NSString *)clientIdString;
 
 @end

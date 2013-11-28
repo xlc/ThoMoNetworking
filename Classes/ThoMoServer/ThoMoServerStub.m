@@ -41,6 +41,7 @@
 #import <CFNetwork/CFNetwork.h>
 
 #import "ThoMoServerDelegateProtocol.h"
+#import "ThoMoClientProxy_Private.h"
 
 #define kThoMoNetworkInfoKeyServer kThoMoNetworkInfoKeyLocalNetworkStub
 #define kThoMoNetworkInfoKeyClient kThoMoNetworkInfoKeyRemoteConnectionIdString
@@ -61,14 +62,13 @@
 @interface ThoMoServerStub()
 {
 	CFSocketRef			_listenSocket;
+    
+    NSMutableDictionary *_clientDict;   // key: string, value: block holding a weak reference to a ClientProxy
 }
 
 
 @property (nonatomic, strong)	NSNetService	*netService;
 @property (assign)				uint16_t		listenPort;
-
--(void)send:(id<NSCoding>)anObject toClient:(NSString *)theClientIdString;
--(void)sendToAllClients:(id<NSCoding>)theData;
 
 -(void) handleNewConnectionFromAddress:(NSData *)addr inputStream:(NSInputStream *)istr outputStream:(NSOutputStream *)ostr;
 
@@ -86,8 +86,8 @@
 {
 	self = [super initWithProtocolIdentifier:theProtocolIdentifier];
 	if (self != nil) {
-		// add inits here
-		self.listenPort = thePort;
+        _listenPort = thePort;
+        _clientDict = [NSMutableDictionary dictionary];
 	}
 	return self;
 }
@@ -95,8 +95,12 @@
 
 -(id)initWithProtocolIdentifier:(NSString *)theProtocolIdentifier;
 {
-	self = [self initWithProtocolIdentifier:theProtocolIdentifier andPort:SOME_FREE_PORT];
-	return self;
+    return [self initWithProtocolIdentifier:theProtocolIdentifier andPort:SOME_FREE_PORT];
+}
+
+- (void) dealloc
+{
+	[self stop];
 }
 
 #pragma mark Control
@@ -109,6 +113,11 @@
 -(void)send:(id<NSCoding>)anObject toClient:(NSString *)theClientIdString;
 {
 	[super send:anObject toConnection:theClientIdString];
+}
+
+-(void)sendBytes:(NSData *)theBytes toClient:(NSString *)theClientIdString
+{
+    [super sendByteData:theBytes toConnection:theClientIdString];
 }
 
 -(void)sendToAllClients:(id<NSCoding>)theData;
@@ -397,11 +406,27 @@ static void ServerStubAcceptCallback(CFSocketRef listenSocket, CFSocketCallBackT
 }
 
 
-// ---------------------------------------------------------------------------------------------------------------------
 #pragma mark -
-#pragma mark Debugging
-// ---------------------------------------------------------------------------------------------------------------------
 
-// empty
+- (ThoMoClientProxy *)clientProxyForId:(NSString *)clientIdString
+{
+    ThoMoClientProxy *proxy;
+    id (^block)(void);
+    block = _clientDict[clientIdString];
+    if (block) {
+        proxy = block();
+        if (proxy) {
+            return proxy;
+        }
+    }
+    
+    proxy = [[ThoMoClientProxy alloc] initWithServer:self andConnectionString:clientIdString];
+    
+    __weak id weakproxy = proxy;
+    
+    _clientDict[clientIdString] = [^() { return weakproxy; } copy];
+    
+    return proxy;
+}
 
 @end
