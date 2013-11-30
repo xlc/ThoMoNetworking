@@ -53,10 +53,9 @@
 @property (strong) NSMutableArray *offeredNetServices;
 @property (strong) NSMutableDictionary *connectedNetServices;
 
--(void)netServiceProblemRelayMethod:(NSDictionary *)infoDict;
--(void)didReceiveDataRelayMethod:(NSDictionary *)infoDict;
-
 -(void)resolveNetService:(NSNetService *)theNetService;
+
+- (ThoMoServerProxy *)serverProxyForIdNoCreate:(NSString *)serverIdString;
 
 @end
 
@@ -327,58 +326,76 @@
 #pragma mark -
 #pragma mark Main Thread Relay Methods
 
-// override
 -(void)netWorkStubDidShutDownRelayMethod
 {
 	if ([_delegate respondsToSelector:@selector(clientDidShutDown:)])
 		[_delegate clientDidShutDown:self];
 }
 
-// override
 -(void)netServiceProblemRelayMethod:(NSDictionary *)infoDict
 {
 	if ([_delegate respondsToSelector:@selector(client:encounteredNetServiceError:)])
         [_delegate client:self encounteredNetServiceError:[infoDict objectForKey:kThoMoNetworkInfoKeyUserMessage]];
+    
+    for (NSString *connectionString in self.connectedServers) {
+        ThoMoServerProxy *proxy = [self serverProxyForIdNoCreate:connectionString];
+        if ([proxy.delegate respondsToSelector:@selector(serverProxyDidDisconnect:)]) {
+            [proxy.delegate serverProxyDidDisconnect:proxy];
+        }
+    }
 }
 
-// required
-// override
 -(void)didReceiveDataRelayMethod:(NSDictionary *)infoDict;
 {
 	[_delegate client:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]
 	  didReceiveData:[infoDict objectForKey:kThoMoNetworkInfoKeyData] 
 		  fromServer:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]];
+    
+    ThoMoServerProxy *proxy = [self serverProxyForIdNoCreate:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]];
+    [proxy.delegate serverProxy:proxy didReceiveData:[infoDict objectForKey:kThoMoNetworkInfoKeyData]];
 }
 
-// override
 -(void)connectionEstablishedRelayMethod:(NSDictionary *)infoDict;
 {
 	if ([_delegate respondsToSelector:@selector(client:didConnectToServer:)])
 		[_delegate client:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]
 	  didConnectToServer:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]];
+    
+    ThoMoServerProxy *proxy = [self serverProxyForIdNoCreate:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]];
+    if ([proxy.delegate respondsToSelector:@selector(serverProxyDidResumeConnection:)]) {
+        [proxy.delegate serverProxyDidResumeConnection:proxy];
+    }
 }
 
-// override
 -(void)connectionLostRelayMethod:(NSDictionary *)infoDict;
 {
 	if ([_delegate respondsToSelector:@selector(client:didDisconnectFromServer:error:)])
 		[_delegate client:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]
   didDisconnectFromServer:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]
                     error:[infoDict objectForKey:kThoMoNetworkInfoKeyUserMessage]];
+    
+    ThoMoServerProxy *proxy = [self serverProxyForIdNoCreate:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]];
+    if ([proxy.delegate respondsToSelector:@selector(serverProxyDidDisconnect:)]) {
+        [proxy.delegate serverProxyDidDisconnect:proxy];
+    }
 }
 
-// override
 -(void)connectionClosedRelayMethod:(NSDictionary *)infoDict;
 {
 	if ([_delegate respondsToSelector:@selector(client:didDisconnectFromServer:error:)])
 		[_delegate client:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]
   didDisconnectFromServer:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]
                     error:[infoDict objectForKey:kThoMoNetworkInfoKeyUserMessage]];
+    
+    ThoMoServerProxy *proxy = [self serverProxyForIdNoCreate:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]];
+    if ([proxy.delegate respondsToSelector:@selector(serverProxyDidDisconnect:)]) {
+        [proxy.delegate serverProxyDidDisconnect:proxy];
+    }
 }
 
 #pragma mark - server proxy
 
-- (ThoMoServerProxy *)serverProxyForId:(NSString *)serverIdString
+- (ThoMoServerProxy *)serverProxyForIdNoCreate:(NSString *)serverIdString
 {
     ThoMoServerProxy *proxy;
     id (^block)(void);
@@ -388,6 +405,16 @@
         if (proxy) {
             return proxy;
         }
+    }
+    
+    return nil;
+}
+
+- (ThoMoServerProxy *)serverProxyForId:(NSString *)serverIdString
+{
+    ThoMoServerProxy *proxy = [self serverProxyForIdNoCreate:serverIdString];
+    if (proxy) {
+        return proxy;
     }
     
     proxy = [[ThoMoServerProxy alloc] initWithClient:self andConnectionString:serverIdString];

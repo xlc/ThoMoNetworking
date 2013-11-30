@@ -72,6 +72,8 @@
 
 -(void) handleNewConnectionFromAddress:(NSData *)addr inputStream:(NSInputStream *)istr outputStream:(NSOutputStream *)ostr;
 
+- (ThoMoClientProxy *)clientProxyForIdNoCreate:(NSString *)clientIdString;
+
 @end
 
 #pragma mark -
@@ -369,15 +371,23 @@ static void ServerStubAcceptCallback(CFSocketRef listenSocket, CFSocketCallBackT
 {
 	if ([_delegate respondsToSelector:@selector(server:encounteredNetServiceError:)])
         [_delegate server:self encounteredNetServiceError:[infoDict objectForKey:kThoMoNetworkInfoKeyUserMessage]];
+    
+    for (NSString *connectionString in self.connectedClients) {
+        ThoMoClientProxy *proxy = [self clientProxyForIdNoCreate:connectionString];
+        if ([proxy.delegate respondsToSelector:@selector(clientProxyDidDisconnect:)]) {
+            [proxy.delegate clientProxyDidDisconnect:proxy];
+        }
+    }
 }
 
-
-// required
 -(void)didReceiveDataRelayMethod:(NSDictionary *)infoDict;
 {
 	[_delegate server:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]
 	  didReceiveData:[infoDict objectForKey:kThoMoNetworkInfoKeyData] 
 		  fromClient:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]];
+    
+    ThoMoClientProxy *proxy = [self clientProxyForIdNoCreate:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]];
+    [proxy.delegate clientProxy:proxy didReceiveData:[infoDict objectForKey:kThoMoNetworkInfoKeyData]];
 }
 
 
@@ -385,6 +395,11 @@ static void ServerStubAcceptCallback(CFSocketRef listenSocket, CFSocketCallBackT
 {
 	if ([_delegate respondsToSelector:@selector(server:acceptedConnectionFromClient:)])
 		[_delegate server:[infoDict objectForKey:kThoMoNetworkInfoKeyServer] acceptedConnectionFromClient:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]];
+    
+    ThoMoClientProxy *proxy = [self clientProxyForIdNoCreate:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]];
+    if ([proxy.delegate respondsToSelector:@selector(clientProxyDidResumeConnection:)]) {
+        [proxy.delegate clientProxyDidResumeConnection:proxy];
+    }
 }
 
 
@@ -394,6 +409,11 @@ static void ServerStubAcceptCallback(CFSocketRef listenSocket, CFSocketCallBackT
 		[_delegate server:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]
   lostConnectionToClient:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]
                    error:[infoDict objectForKey:kThoMoNetworkInfoKeyUserMessage]];
+    
+    ThoMoClientProxy *proxy = [self clientProxyForIdNoCreate:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]];
+    if ([proxy.delegate respondsToSelector:@selector(clientProxyDidDisconnect:)]) {
+        [proxy.delegate clientProxyDidDisconnect:proxy];
+    }
 }
 
 
@@ -403,12 +423,17 @@ static void ServerStubAcceptCallback(CFSocketRef listenSocket, CFSocketCallBackT
 		[_delegate server:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]
   lostConnectionToClient:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]
                    error:[infoDict objectForKey:kThoMoNetworkInfoKeyUserMessage]];
+    
+    ThoMoClientProxy *proxy = [self clientProxyForIdNoCreate:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]];
+    if ([proxy.delegate respondsToSelector:@selector(clientProxyDidDisconnect:)]) {
+        [proxy.delegate clientProxyDidDisconnect:proxy];
+    }
 }
 
 
 #pragma mark -
 
-- (ThoMoClientProxy *)clientProxyForId:(NSString *)clientIdString
+- (ThoMoClientProxy *)clientProxyForIdNoCreate:(NSString *)clientIdString
 {
     ThoMoClientProxy *proxy;
     id (^block)(void);
@@ -418,6 +443,16 @@ static void ServerStubAcceptCallback(CFSocketRef listenSocket, CFSocketCallBackT
         if (proxy) {
             return proxy;
         }
+    }
+    
+    return nil;
+}
+
+- (ThoMoClientProxy *)clientProxyForId:(NSString *)clientIdString
+{
+    ThoMoClientProxy *proxy = [self clientProxyForIdNoCreate:clientIdString];
+    if (proxy) {
+        return proxy;
     }
     
     proxy = [[ThoMoClientProxy alloc] initWithServer:self andConnectionString:clientIdString];

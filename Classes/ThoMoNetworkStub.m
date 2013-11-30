@@ -237,8 +237,6 @@ NSString *const kThoMoNetworkPrefScopeSpecifierKey				= @"kThoMoNetworkPrefScope
 {
 	NSString *connectionKey = [self keyForConnection:theConnection];
 	
-	NSString *userMessage = [NSString stringWithFormat:@"Stream end event encountered on stream to %@! Closing connection.", connectionKey];
-	
 	[theConnection close];
 	
 	@synchronized(_connections)
@@ -248,8 +246,7 @@ NSString *const kThoMoNetworkPrefScopeSpecifierKey				= @"kThoMoNetworkPrefScope
 	
 	NSDictionary *infoDict = [NSDictionary dictionaryWithObjectsAndKeys:	
 							  self,				kThoMoNetworkInfoKeyLocalNetworkStub,
-							  connectionKey,	kThoMoNetworkInfoKeyRemoteConnectionIdString,	
-							  userMessage,		kThoMoNetworkInfoKeyUserMessage,
+							  connectionKey,	kThoMoNetworkInfoKeyRemoteConnectionIdString,
 							  nil];
 	
 	[self performSelectorOnMainThread:@selector(connectionClosedRelayMethod:) withObject:infoDict waitUntilDone:NO];
