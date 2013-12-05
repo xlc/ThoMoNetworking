@@ -35,6 +35,8 @@
 #import <ThoMoNetworking/ThoMoServerStub.h>
 #import <ThoMoNetworking/ThoMoClientDelegateProtocol.h>
 #import <ThoMoNetworking/ThoMoServerDelegateProtocol.h>
+#import <ThoMoNetworking/ThoMoClientProxy.h>
+#import <ThoMoNetworking/ThoMoServerProxy.h>
 
 /// Debugging pList key.
 /**

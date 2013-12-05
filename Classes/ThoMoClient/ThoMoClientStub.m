@@ -347,9 +347,11 @@
 
 -(void)didReceiveDataRelayMethod:(NSDictionary *)infoDict;
 {
-	[_delegate client:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]
-	  didReceiveData:[infoDict objectForKey:kThoMoNetworkInfoKeyData] 
-		  fromServer:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]];
+    if ([_delegate respondsToSelector:@selector(client:didReceiveData:fromServer:)]) {
+        [_delegate client:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]
+           didReceiveData:[infoDict objectForKey:kThoMoNetworkInfoKeyData]
+               fromServer:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]];
+    }
     
     ThoMoServerProxy *proxy = [self serverProxyForIdNoCreate:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]];
     [proxy.delegate serverProxy:proxy didReceiveData:[infoDict objectForKey:kThoMoNetworkInfoKeyData]];

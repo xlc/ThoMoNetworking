@@ -382,9 +382,11 @@ static void ServerStubAcceptCallback(CFSocketRef listenSocket, CFSocketCallBackT
 
 -(void)didReceiveDataRelayMethod:(NSDictionary *)infoDict;
 {
-	[_delegate server:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]
-	  didReceiveData:[infoDict objectForKey:kThoMoNetworkInfoKeyData] 
-		  fromClient:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]];
+    if ([_delegate respondsToSelector:@selector(server:didReceiveData:fromClient:)]) {
+        [_delegate server:[infoDict objectForKey:kThoMoNetworkInfoKeyServer]
+           didReceiveData:[infoDict objectForKey:kThoMoNetworkInfoKeyData]
+               fromClient:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]];
+    }
     
     ThoMoClientProxy *proxy = [self clientProxyForIdNoCreate:[infoDict objectForKey:kThoMoNetworkInfoKeyClient]];
     [proxy.delegate clientProxy:proxy didReceiveData:[infoDict objectForKey:kThoMoNetworkInfoKeyData]];

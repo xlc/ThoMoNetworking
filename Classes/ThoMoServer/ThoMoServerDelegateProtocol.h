@@ -51,11 +51,7 @@
 /// Client shutdown notification (optional)
 - (void)serverDidShutDown:(ThoMoServerStub *)theServer;
 
-
-
-@required
-
-/// Data received notification (required)
+/// Data received notification
 /**
  Sent to its delegate by the server stub on the main thread whenever it received data from a client.
  
