@@ -205,15 +205,11 @@ NSString *const kThoMoNetworkPrefScopeSpecifierKey				= @"kThoMoNetworkPrefScope
 	// look up the connection
 	NSString *connectionKey = [self keyForConnection:theConnection];
 	
-	// unarchive the data
-	id receivedData = [NSKeyedUnarchiver unarchiveObjectWithData:theData];
-    
-	
 	// package the parameters into an info dict and relay them to the main thread
 	NSDictionary *infoDict = [NSDictionary dictionaryWithObjectsAndKeys:	
 							  connectionKey,	kThoMoNetworkInfoKeyRemoteConnectionIdString,
 							  self,				kThoMoNetworkInfoKeyLocalNetworkStub,
-							  receivedData,		kThoMoNetworkInfoKeyData,
+							  theData,          kThoMoNetworkInfoKeyData,
 							  nil];
 	
 	[self performSelectorOnMainThread:@selector(didReceiveDataRelayMethod:) withObject:infoDict waitUntilDone:NO];
