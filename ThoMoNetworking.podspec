@@ -7,7 +7,7 @@
    s.author       = { 'Thorsten Karrer' => 'karrer@cs.rwth-aachen.de',
                       'Moritz Wittenhagen' => 'wittenhagen@cs.rwth-aachen.de',
                       'Xiliang Chen' => 'xlchen1291@gmail.com' }
-   s.source       = { :git => 'https://github.com/xlc/ThoMoNetworking.git', :commit => '0dd77c9f0cfdea572d50b4c35373e89e11548217' }
+   s.source       = { :git => 'https://github.com/xlc/ThoMoNetworking.git', :commit => '0bf0c14e72a1be6f7943236bc2dec7000bba0b89' }
    s.source_files = 'Classes/**/*'
    s.private_header_files = '*Private.h'
 
